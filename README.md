@@ -1,4 +1,4 @@
-# Social Hub (Instagram x TikTok Hybrid)
+# Social Hub (TikTok Hybrid)
 
 **By:** Mohamed Hasan Ahmed
 **Date:** 5/7/2026
@@ -7,7 +7,7 @@
 
 ## 📸 About The Project
 
-**Social Hub** is a high-fidelity web application that merges the clean, aesthetic-driven interface of **Instagram** with the immersive, fast-paced content consumption of **TikTok**. 
+**Social Hub** is a high-fidelity web application that merges the clean, aesthetic-driven interface with the immersive, fast-paced content consumption of **TikTok**. 
 
 While the layout and navigation prioritize the "Instagram" look—featuring structured grids, sleek profiles, and a focus on high-quality photography—the "Reels" section incorporates the vertical-scroll UX popularized by TikTok. This project serves as a mock social ecosystem designed to showcase modern front-end design patterns and seamless media interaction.
 
