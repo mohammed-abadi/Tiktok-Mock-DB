@@ -31,7 +31,7 @@ While the layout and navigation prioritize the "Instagram" look—featuring stru
 
 ## ✨ Features
 
-* **Instagram-Inspired UI:** A clean, minimalist aesthetic with a focus on white space and photography.
+* **Inspired UI:** A clean, minimalist aesthetic with a focus on white space and photography.
 * **TikTok-Style Reels:** An immersive vertical video feed with smooth transitions and gesture-like navigation.
 * **Glassmorphism Design:** Modern UI elements using frosted glass effects, subtle blurs, and soft shadows.
 * **Dynamic Media Rendering:** High-performance loading of images and video content.
