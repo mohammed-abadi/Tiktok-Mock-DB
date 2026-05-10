@@ -1,29 +1,22 @@
 ## 🗄️ Database Schema (ERD)
 
-The TikTok Hub backend is built on a relational PostgreSQL database. The architecture is designed to handle a complex social graph, allowing for asymmetrical following, content reposting, and multi-layered engagement (likes/favorites).
+The TikTok Hub backend is built on a relational PostgreSQL database. The architecture is designed to handle a complex social graph, allowing for real-time messaging, asymmetrical following, and multi-threaded commenting.
 
 ### 1. Entity Relationship Diagram
-The following relationships define the social ecosystem:
+The following diagram illustrates the interconnected nature of the Hub ecosystem:
 
-* **User ↔ Profile (1:1):** Every authenticated user has a unique social identity.
-* **Profile ↔ Profile (M:N Self):** Asymmetrical following system (Followers/Following).
-* **User ↔ Post (1:N):** One-to-many relationship defining authorship.
-* **Post ↔ Post (1:N Self):** Recursive relationship to track "Repost" or "Duet" lineage.
-* **User ↔ Post (M:N):** High-performance join tables for Likes and Favorites.
-* **Post ↔ Topic (M:N):** Categorization system for "Discover" feed filtering.
+![TikTok Hub ERD](<img width="1086" height="890" alt="Untitled Diagram" src="https://github.com/user-attachments/assets/b4a0cfaf-5e82-45f0-a628-9a051585fbff" />
+)
 
+### 2. Relationship Architecture
 
-
-### 2. Data Models Breakdown
-
-| Entity | Primary Role | Key Fields |
-| :--- | :--- | :--- |
-| **User** | Authentication | Username, Email, Password |
-| **Profile** | Social Identity | Bio, Avatar, Following (M:N) |
-| **Post** | Content Hub | IsReel (Bool), Caption, MediaURL, RepostOf (FK) |
-| **Topic** | Discovery | Name (Unique) |
+* **The Social Core:** A 1:1 link between **User** and **Profile** handles identity, while the **Followers** table manages the many-to-many social graph.
+* **Content & Engagement:** **Posts** (supporting Reels via boolean) are linked to **Likes**, **Favorites**, and **Reposts**. 
+* **Conversational Engine:** A complex relationship between **Participants**, **Conversations**, and **Messages** allows for secure, multi-user direct messaging.
+* **Deep Interaction:** The **Comment** model supports nested interactions via a self-referencing `parent_comment_id`, enabling organized discussion threads.
+* **Discovery:** A many-to-many join via **Post_Topic** ensures posts are discoverable through the **Topic** system.
 
 ### 3. Logic Implementation
-* **The "Reels" Engine:** Posts are flagged with a boolean `is_reel`. The API filters these for the vertical-scroll feed.
-* **Liked Videos Tab:** Leveraging the `related_name='liked_posts'` on the Post model, we can retrieve a user's entire liked gallery with a single query: `request.user.liked_posts.filter(is_reel=True)`.
-* **Social Graph:** Using `symmetrical=False` on the Profile Many-to-Many field allows for a "TikTok-style" follow system where follow-backs are not mandatory.
+* **The "Reels" Engine:** Posts are flagged with `is_reel`. The API filters these for the vertical-scroll feed while tracking `view_count` for analytics.
+* **Messaging Flow:** Messages are tied to a `Conversation` rather than just two users, allowing the schema to scale to group chats easily.
+* **Threaded Comments:** By using a foreign key to itself on the Comment model, we can render "replies to replies" just like on Instagram or TikTok.
