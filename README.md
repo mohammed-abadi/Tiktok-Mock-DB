@@ -1,66 +1,29 @@
-# TikTok Mock DB 
-**By:** Mohamed Hasan Ahmed
-**Date:** 5/7/2026
+## 🗄️ Database Schema (ERD)
 
----
+The TikTok Hub backend is built on a relational PostgreSQL database. The architecture is designed to handle a complex social graph, allowing for asymmetrical following, content reposting, and multi-layered engagement (likes/favorites).
 
-## 📸 About The Project
+### 1. Entity Relationship Diagram
+The following relationships define the social ecosystem:
 
-**TikTok Hub** is a high-fidelity full-stack application that merges the clean, structured aesthetic of **Instagram** with the immersive, fast-paced content consumption of **TikTok**. 
+* **User ↔ Profile (1:1):** Every authenticated user has a unique social identity.
+* **Profile ↔ Profile (M:N Self):** Asymmetrical following system (Followers/Following).
+* **User ↔ Post (1:N):** One-to-many relationship defining authorship.
+* **Post ↔ Post (1:N Self):** Recursive relationship to track "Repost" or "Duet" lineage.
+* **User ↔ Post (M:N):** High-performance join tables for Likes and Favorites.
+* **Post ↔ Topic (M:N):** Categorization system for "Discover" feed filtering.
 
-By utilizing **Django** for a robust relational backend and **React** for a fluid frontend, this project delivers a "Social Hub" experience. While the layout emphasizes sleek profiles and organized grids, the "Reels" section incorporates the vertical-scroll UX that defines modern social media. This project serves as a comprehensive showcase of modern API design, relational database architecture, and seamless media interaction.
 
----
 
-## 🖼️ Screenshots
+### 2. Data Models Breakdown
 
-### 1️⃣ Discover Feed
-*A curated grid layout for exploring trending photos and videos, inspired by Instagram's Explore page.*
+| Entity | Primary Role | Key Fields |
+| :--- | :--- | :--- |
+| **User** | Authentication | Username, Email, Password |
+| **Profile** | Social Identity | Bio, Avatar, Following (M:N) |
+| **Post** | Content Hub | IsReel (Bool), Caption, MediaURL, RepostOf (FK) |
+| **Topic** | Discovery | Name (Unique) |
 
-### 2️⃣ Reels View
-*A full-screen, vertical video player with high-speed scrolling and overlay interaction buttons.*
-
-### 3️⃣ User Profile
-*A personalized dashboard featuring user bio, follower counts, and a tabbed view for posts and liked content.*
-
-### 4️⃣ Interaction Modals
-*Glassmorphic overlays for comments, sharing, and post details that maintain visual context.*
-
----
-
-## ✨ Features
-
-* **Django + React Architecture:** A decoupled full-stack approach using **Django REST Framework (DRF)** for a secure, scalable API.
-* **TikTok-Style Reels:** An immersive vertical video feed with smooth transitions and gesture-like navigation.
-* **Relational Social Graph:** Complex database logic supporting **Followers/Following**, **Reposts**, and **Favorites** via Many-to-Many relationships.
-* **Glassmorphism Design:** Modern UI elements using frosted glass effects, subtle blurs, and soft shadows.
-* **Engagement Engine:** Backend logic for liking, favoriting, and "reposting" content dynamically to a user's feed.
-* **Responsive Layout:** A "Mobile-First" approach ensuring the app feels native on iOS/Android browsers. ( potentially )
-
----
-
-## 🛠️ Technologies Used
-
-* **Python & Django:** Backend framework handling the "Hub" logic and security.
-* **Django REST Framework (DRF):** API creation for seamless communication with the frontend.
-* **React:** Frontend library for building a fast, reactive User Interface.
-* **PostgreSQL:** Relational database for managing complex social connections (Users, Profiles, Posts, Topics).
-* **CSS3 & Glassmorphism:** Advanced styling including CSS Variables, Flexbox, and Grid.
-* **Axios:** Efficient API handling for media and user data retrieval.
-
----
-
-## 🌐 APIs & References
-
-### API Logic
-* **DRF Social API:** A custom-built RESTful API for fetching Reels, handling User authentication, and managing engagement metrics.
-
-### References
-* **Documentation:** [Django Docs](https://docs.djangoproject.com/), [React Docs](https://react.dev/), [MDN Web Docs](https://developer.mozilla.org/)
-* **Design Inspiration:** [Dribbble](https://dribbble.com) (Focus on "Modern Instagram UI" and "TikTok UX Patterns").
-
----
-
-## 🚀 Live Demo
-
-[**Explore TikTok Hub Live Demo**](#)
+### 3. Logic Implementation
+* **The "Reels" Engine:** Posts are flagged with a boolean `is_reel`. The API filters these for the vertical-scroll feed.
+* **Liked Videos Tab:** Leveraging the `related_name='liked_posts'` on the Post model, we can retrieve a user's entire liked gallery with a single query: `request.user.liked_posts.filter(is_reel=True)`.
+* **Social Graph:** Using `symmetrical=False` on the Profile Many-to-Many field allows for a "TikTok-style" follow system where follow-backs are not mandatory.
