@@ -1,4 +1,4 @@
-# TikTok Hub (Social Hybrid)
+# TikTok Mock (Social Hybrid)
 **By:** Mohamed Hasan Ahmed
 **Date:** 5/7/2026
 
