@@ -1,4 +1,4 @@
-# Tiktok Mock Database (TikTok Hybrid)
+# TikTok Hub (Social Hybrid)
 **By:** Mohamed Hasan Ahmed
 **Date:** 5/7/2026
 
@@ -6,9 +6,9 @@
 
 ## 📸 About The Project
 
-**Tiktok Mock App** is a high-fidelity web application that merges the clean, aesthetic-driven interface with the immersive, fast-paced content consumption of **TikTok**. 
+**TikTok Hub** is a high-fidelity full-stack application that merges the clean, structured aesthetic of **Instagram** with the immersive, fast-paced content consumption of **TikTok**. 
 
-While the layout and navigation prioritize the "Instagram" look—featuring structured grids, sleek profiles, and a focus on high-quality photography—the "Reels" section incorporates the vertical-scroll UX popularized by TikTok. This project serves as a mock social ecosystem designed to showcase modern front-end design patterns and seamless media interaction.
+By utilizing **Django** for a robust relational backend and **React** for a fluid frontend, this project delivers a "Social Hub" experience. While the layout emphasizes sleek profiles and organized grids, the "Reels" section incorporates the vertical-scroll UX that defines modern social media. This project serves as a comprehensive showcase of modern API design, relational database architecture, and seamless media interaction.
 
 ---
 
@@ -30,37 +30,37 @@ While the layout and navigation prioritize the "Instagram" look—featuring stru
 
 ## ✨ Features
 
-* **Inspired UI:** A clean, minimalist aesthetic with a focus on white space and photography.
+* **Django + React Architecture:** A decoupled full-stack approach using **Django REST Framework (DRF)** for a secure, scalable API.
 * **TikTok-Style Reels:** An immersive vertical video feed with smooth transitions and gesture-like navigation.
+* **Relational Social Graph:** Complex database logic supporting **Followers/Following**, **Reposts**, and **Favorites** via Many-to-Many relationships.
 * **Glassmorphism Design:** Modern UI elements using frosted glass effects, subtle blurs, and soft shadows.
-* **Dynamic Media Rendering:** High-performance loading of images and video content.
-* **Engagement Tools:** Working UI for liking, commenting, and "reposting" content to a user's feed.
+* **Engagement Engine:** Backend logic for liking, favoriting, and "reposting" content dynamically to a user's feed.
 * **Responsive Layout:** A "Mobile-First" approach ensuring the app feels native on iOS/Android browsers.
-* **Profile Management:** Mock user profiles with dynamic stats and content galleries.
 
 ---
 
 ## 🛠️ Technologies Used
 
-* **HTML5:** Semantic structure for optimal accessibility.
-* **CSS3:** Advanced styling including CSS Variables, Flexbox, Grid, and Glassmorphism.
-* **JavaScript (ES6+):** Logic for the reels engine, feed filtering, and state interactions.
+* **Python & Django:** Backend framework handling the "Hub" logic and security.
+* **Django REST Framework (DRF):** API creation for seamless communication with the frontend.
+* **React:** Frontend library for building a fast, reactive User Interface.
+* **PostgreSQL:** Relational database for managing complex social connections (Users, Profiles, Posts, Topics).
+* **CSS3 & Glassmorphism:** Advanced styling including CSS Variables, Flexbox, and Grid.
 * **Axios:** Efficient API handling for media and user data retrieval.
-* **PostgreSQL:** (Backend) Relational database for managing user data and social connections.
 
 ---
 
 ## 🌐 APIs & References
 
-### API Used
-* **Custom Social API:** A dedicated backend for fetching mock social data, media URLs, and engagement metrics.
+### API Logic
+* **DRF Social API:** A custom-built RESTful API for fetching Reels, handling User authentication, and managing engagement metrics.
 
 ### References
-* **Documentation:** [W3Schools](https://www.w3schools.com/), [MDN Web Docs](https://developer.mozilla.org/), [Stack Overflow](https://stackoverflow.com/)
+* **Documentation:** [Django Docs](https://docs.djangoproject.com/), [React Docs](https://react.dev/), [MDN Web Docs](https://developer.mozilla.org/)
 * **Design Inspiration:** [Dribbble](https://dribbble.com) (Focus on "Modern Instagram UI" and "TikTok UX Patterns").
 
 ---
 
 ## 🚀 Live Demo
 
-[**Explore Social Hub Live Demo**](#)
+[**Explore TikTok Hub Live Demo**](#)
