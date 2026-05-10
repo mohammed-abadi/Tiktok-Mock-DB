@@ -1,14 +1,8 @@
 
 .env
-
-
 *.sql
 *.dump
 *.tar
-
-
 media/
-
-
 __pycache__/
 anniez
