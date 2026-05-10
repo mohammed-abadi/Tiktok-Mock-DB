@@ -1,4 +1,4 @@
-# Tiktok Mock (TikTok Hybrid)
+# Tiktok Mock Database (TikTok Hybrid)
 **By:** Mohamed Hasan Ahmed
 **Date:** 5/7/2026
 
