@@ -35,7 +35,7 @@ By utilizing **Django** for a robust relational backend and **React** for a flui
 * **Relational Social Graph:** Complex database logic supporting **Followers/Following**, **Reposts**, and **Favorites** via Many-to-Many relationships.
 * **Glassmorphism Design:** Modern UI elements using frosted glass effects, subtle blurs, and soft shadows.
 * **Engagement Engine:** Backend logic for liking, favoriting, and "reposting" content dynamically to a user's feed.
-* **Responsive Layout:** A "Mobile-First" approach ensuring the app feels native on iOS/Android browsers.
+* **Responsive Layout:** A "Mobile-First" approach ensuring the app feels native on iOS/Android browsers. ( potentially )
 
 ---
 
