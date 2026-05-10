@@ -5,8 +5,7 @@ The TikTok Hub backend is built on a relational PostgreSQL database. The archite
 ### 1. Entity Relationship Diagram
 The following diagram illustrates the interconnected nature of the Hub ecosystem:
 
-![TikTok Hub ERD](<img width="1086" height="890" alt="Untitled Diagram" src="https://github.com/user-attachments/assets/b4a0cfaf-5e82-45f0-a628-9a051585fbff" />
-)
+![TikTok Hub ERD](./Images/Untitled%20Diagram.png)
 
 ### 2. Relationship Architecture
 
