@@ -4,30 +4,30 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# SECURITY
 SECRET_KEY = os.environ.get(
     "SECRET_KEY", "django-insecure-*&g1$8ehfcj0@g4)jx4thd+r*5uib!99$y1#o1m&yjqkv2l)cl"
 )
-
 DEBUG = os.environ.get("DEBUG", "True") == "True"
-
 ALLOWED_HOSTS = ["localhost", "127.0.0.1", ".onrender.com"]
 
+# Application definition
 INSTALLED_APPS = [
-    "daphne",
+    "daphne",  # Must be at the top for WebSockets
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "corsheaders",
+    "corsheaders",  # For React connection
     "rest_framework",
-    "channels",
+    "channels",  # For WebSockets
     "main_app",
 ]
 
 MIDDLEWARE = [
-    "corsheaders.middleware.CorsMiddleware",
+    "corsheaders.middleware.CorsMiddleware",  # Must be first
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -40,9 +40,11 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = "MockApp.urls"
 
+# Server handling
 ASGI_APPLICATION = "MockApp.asgi.application"
 WSGI_APPLICATION = "MockApp.wsgi.application"
 
+# Redis Configuration (For Real-time DMs)
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
@@ -67,6 +69,7 @@ TEMPLATES = [
     },
 ]
 
+# Database setup for Render
 DATABASES = {
     "default": dj_database_url.config(
         default="postgres://ichi:3713@127.0.0.1:5432/tiktok_db", conn_max_age=600
@@ -82,19 +85,23 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
+
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 
+
 STATIC_URL = "static/"
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
 
 REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 10,
 }
+
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
@@ -102,3 +109,4 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
     "http://127.0.0.1:5173",
 ]
+CORS_ALLOW_CREDENTIALS = True
