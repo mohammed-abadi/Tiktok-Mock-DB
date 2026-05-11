@@ -1,22 +1,16 @@
-from rest_framework import viewsets, permissions
-from .models import Post, Profile, Topic, Comment
-from .serializers import PostSerializer, ProfileSerializer
+from rest_framework import generics
+from rest_framework.pagination import PageNumberPagination
+from .models import Post
+from .serializers import PostSerializer
 
 
-class PostViewSet(viewsets.ModelViewSet):
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = "page_size"
+    max_page_size = 100
 
-    queryset = Post.objects.all().order_by("-created_at")
+
+class ReelListView(generics.ListAPIView):
+    queryset = Post.objects.filter(is_reel=True).order_by("-created_at")
     serializer_class = PostSerializer
-
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-
-    def perform_create(self, serializer):
-
-        serializer.save(user=self.request.user)
-
-
-class ProfileViewSet(viewsets.ModelViewSet):
-
-    queryset = Profile.objects.all()
-    serializer_class = ProfileSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    pagination_class = StandardResultsSetPagination
