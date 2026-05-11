@@ -1,24 +1,36 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Profile, Post, Comment, Topic
+from .models import Profile, Post, Comment, Topic, Message, Conversation
 
 
 class ProfileSerializer(serializers.ModelSerializer):
-    """Provides the avatar and bio for the user"""
-
     class Meta:
         model = Profile
         fields = ["profile_picture_url", "bio", "location"]
 
 
 class UserSerializer(serializers.ModelSerializer):
-    """Includes the profile data nested inside the user object"""
-
     profile = ProfileSerializer(read_only=True)
 
     class Meta:
         model = User
         fields = ["id", "username", "profile"]
+
+
+class MessageSerializer(serializers.ModelSerializer):
+    sender_name = serializers.ReadOnlyField(source="sender.username")
+
+    class Meta:
+        model = Message
+        fields = ["id", "conversation", "sender", "sender_name", "content", "sent_at"]
+
+
+class ConversationSerializer(serializers.ModelSerializer):
+    messages = MessageSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Conversation
+        fields = ["id", "is_group", "messages", "created_at"]
 
 
 class TopicSerializer(serializers.ModelSerializer):
@@ -43,7 +55,6 @@ class PostSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     topics = TopicSerializer(many=True, read_only=True)
     comments = CommentSerializer(many=True, read_only=True)
-
     likes_count = serializers.SerializerMethodField()
     comments_count = serializers.SerializerMethodField()
 
