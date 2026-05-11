@@ -12,7 +12,6 @@ DEBUG = os.environ.get("DEBUG", "True") == "True"
 
 ALLOWED_HOSTS = ["localhost", "127.0.0.1", ".onrender.com"]
 
-# daphne must be at the very top of INSTALLED_APPS
 INSTALLED_APPS = [
     "daphne",
     "django.contrib.admin",
@@ -41,12 +40,9 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = "MockApp.urls"
 
-# This switches your server to handle WebSockets
 ASGI_APPLICATION = "MockApp.asgi.application"
 WSGI_APPLICATION = "MockApp.wsgi.application"
 
-# Redis Configuration for Real-time Messaging
-# On Render, you will create a Redis instance and put the URL in your Environment Variables
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
@@ -93,6 +89,7 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
