@@ -42,37 +42,44 @@ class ReelListView(generics.ListAPIView):
 
 
 class PostViewSet(viewsets.ModelViewSet):
-    queryset = Post.objects.all().order_by("-created_at")
     serializer_class = PostSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
 
-    def perform_create(self, serializer):
-        # Automatically assign the logged in user as the author
-        serializer.save(user=self.request.user)
+    def get_queryset(self):
+        queryset = Post.objects.all().order_by("-created_at")
+        search = self.request.query_params.get("search")
+        tag = self.request.query_params.get("tag")
+
+        if search:
+
+            queryset = queryset.filter(
+                Q(caption__icontains=search) | Q(user__username__icontains=search)
+            )
+        if tag:
+
+            queryset = queryset.filter(caption__icontains=f"#{tag}")
+        return queryset
 
     @action(detail=True, methods=["post"])
-    def toggle_like(self, request, pk=None):
+    def toggle_favorite(self, request, pk=None):
         post = self.get_object()
-        user = request.user
+        if request.user in post.favorites.all():
+            post.favorites.remove(request.user)
+            return Response({"status": "unfavorited"})
+        post.favorites.add(request.user)
+        return Response({"status": "favorited"})
 
-        if not user.is_authenticated:
-            return Response(
-                {"error": "Authentication required"},
-                status=status.HTTP_401_UNAUTHORIZED,
-            )
-
-        if user in post.likes.all():
-            post.likes.remove(user)
-            return Response(
-                {"status": "unliked", "likes_count": post.likes.count()},
-                status=status.HTTP_200_OK,
-            )
-        else:
-            post.likes.add(user)
-            return Response(
-                {"status": "liked", "likes_count": post.likes.count()},
-                status=status.HTTP_200_OK,
-            )
+    @action(detail=True, methods=["post"])
+    def repost(self, request, pk=None):
+        original = self.get_object()
+        repost_post = Post.objects.create(
+            user=request.user,
+            media_url=original.media_url,
+            caption=f"Reposted from @{original.user.username}: {original.caption}",
+            is_repost=True,
+            original_post=original,
+        )
+        return Response(PostSerializer(repost_post).data, status=201)
 
 
 class ProfileViewSet(viewsets.ModelViewSet):

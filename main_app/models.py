@@ -30,19 +30,22 @@ class Topic(models.Model):
 
 
 class Post(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="posts")
-    media_url = models.URLField(max_length=500)
-    caption = models.TextField(max_length=500, blank=True)
+    user = models.ForeignKey(User, on_激related_name="posts", on_delete=models.CASCADE)
+    caption = models.TextField(blank=True)
+    media_url = models.URLField()
     is_reel = models.BooleanField(default=True)
-    view_count = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    topics = models.ManyToManyField(Topic, blank=True, related_name="posts")
     likes = models.ManyToManyField(User, related_name="liked_posts", blank=True)
     favorites = models.ManyToManyField(User, related_name="favorited_posts", blank=True)
 
+    is_repost = models.BooleanField(default=False)
+    original_post = models.ForeignKey(
+        "self", null=True, blank=True, on_delete=models.SET_NULL, related_name="reposts"
+    )
+
     def __str__(self):
-        return f"Post {self.id} by {self.user.username}"
+        return f"{self.user.username} - {self.caption[:20]}"
 
 
 class Repost(models.Model):
