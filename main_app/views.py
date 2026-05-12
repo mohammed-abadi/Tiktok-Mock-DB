@@ -19,7 +19,6 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         if request.method in permissions.SAFE_METHODS:
             return True
-
         return obj.user == request.user
 
 
@@ -52,14 +51,24 @@ class PostViewSet(viewsets.ModelViewSet):
         tag = self.request.query_params.get("tag")
 
         if search:
-
             queryset = queryset.filter(
                 Q(caption__icontains=search) | Q(user__username__icontains=search)
             )
         if tag:
-
             queryset = queryset.filter(caption__icontains=f"#{tag}")
         return queryset
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+    @action(detail=True, methods=["post"])
+    def toggle_like(self, request, pk=None):
+        post = self.get_object()
+        if request.user in post.likes.all():
+            post.likes.remove(request.user)
+            return Response({"status": "unliked", "likes_count": post.likes.count()})
+        post.likes.add(request.user)
+        return Response({"status": "liked", "likes_count": post.likes.count()})
 
     @action(detail=True, methods=["post"])
     def toggle_favorite(self, request, pk=None):
@@ -102,7 +111,6 @@ class ConversationViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-
         return Conversation.objects.filter(participants=self.request.user)
 
 
@@ -116,13 +124,11 @@ class CommentViewSet(viewsets.ModelViewSet):
 
 
 class MessageViewSet(viewsets.ModelViewSet):
-
     queryset = Message.objects.all().order_by("sent_at")
     serializer_class = MessageSerializer
     permission_classes = [permissions.IsAuthenticated, IsOwnerOrReadOnly]
 
     def get_queryset(self):
-
         return Message.objects.filter(
             conversation__participants__user=self.request.user
         ).order_by("sent_at")
