@@ -16,7 +16,7 @@ from .views import (
 
 router = DefaultRouter()
 router.register(r"posts", PostViewSet, basename="post")
-router.register(r"profiles", ProfileViewSet)
+router.register(r"profiles", ProfileViewSet, basename="profile")
 router.register(r"conversations", ConversationViewSet, basename="conversation")
 router.register(r"comments", CommentViewSet)
 router.register(r"messages", MessageViewSet, basename="message")

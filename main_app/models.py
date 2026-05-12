@@ -20,8 +20,6 @@ class Profile(models.Model):
 
 
 #  Content
-
-
 class Topic(models.Model):
     name = models.CharField(max_length=50, unique=True)
 
@@ -35,10 +33,8 @@ class Post(models.Model):
     media_url = models.URLField()
     is_reel = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
-
     likes = models.ManyToManyField(User, related_name="liked_posts", blank=True)
     favorites = models.ManyToManyField(User, related_name="favorited_posts", blank=True)
-
     is_repost = models.BooleanField(default=False)
     original_post = models.ForeignKey(
         "self", null=True, blank=True, on_delete=models.SET_NULL, related_name="reposts"
