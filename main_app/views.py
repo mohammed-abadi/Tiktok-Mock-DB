@@ -1,3 +1,4 @@
+from django.db.models import Q
 from django.contrib.auth.models import User
 from rest_framework import generics, viewsets, status, permissions
 from rest_framework.decorators import action
@@ -18,7 +19,7 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         if request.method in permissions.SAFE_METHODS:
             return True
-        # Profile model has user field, Post has user Comment has user
+
         return obj.user == request.user
 
 
@@ -101,7 +102,7 @@ class ConversationViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        # Only show conversations where the loggedin user is a participant
+
         return Conversation.objects.filter(participants=self.request.user)
 
 
