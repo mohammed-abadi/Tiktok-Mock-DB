@@ -37,7 +37,11 @@ class Post(models.Model):
     favorites = models.ManyToManyField(User, related_name="favorited_posts", blank=True)
     is_repost = models.BooleanField(default=False)
     original_post = models.ForeignKey(
-        "self", null=True, blank=True, on_delete=models.SET_NULL, related_name="reposts"
+        "self",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="self_reposts",
     )
 
     def __str__(self):
