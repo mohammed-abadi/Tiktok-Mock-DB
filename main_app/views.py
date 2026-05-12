@@ -1,4 +1,5 @@
-from rest_framework import generics, viewsets, status
+from django.contrib.auth.models import User
+from rest_framework import generics, viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
@@ -9,7 +10,16 @@ from .serializers import (
     ConversationSerializer,
     MessageSerializer,
     CommentSerializer,
+    UserSerializer,
 )
+
+
+class IsOwnerOrReadOnly(permissions.BasePermission):
+    def has_object_permission(self, request, view, obj):
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        # Profile model has user field, Post has user Comment has user
+        return obj.user == request.user
 
 
 class StandardResultsSetPagination(PageNumberPagination):
@@ -18,24 +28,33 @@ class StandardResultsSetPagination(PageNumberPagination):
     max_page_size = 100
 
 
-# This handles the vertical scrolling feed for React
+class CreateUserView(generics.CreateAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [permissions.AllowAny]
+
+
 class ReelListView(generics.ListAPIView):
     queryset = Post.objects.filter(is_reel=True).order_by("-created_at")
     serializer_class = PostSerializer
     pagination_class = StandardResultsSetPagination
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
 
-# Standard ViewSets for other features
 class PostViewSet(viewsets.ModelViewSet):
-    queryset = Post.objects.all()
+    queryset = Post.objects.all().order_by("-created_at")
     serializer_class = PostSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
+
+    def perform_create(self, serializer):
+        # Automatically assign the logged in user as the author
+        serializer.save(user=self.request.user)
 
     @action(detail=True, methods=["post"])
     def toggle_like(self, request, pk=None):
         post = self.get_object()
         user = request.user
 
-        # Check if user is authenticated (important for Render production)
         if not user.is_authenticated:
             return Response(
                 {"error": "Authentication required"},
@@ -59,17 +78,37 @@ class PostViewSet(viewsets.ModelViewSet):
 class ProfileViewSet(viewsets.ModelViewSet):
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
 
 
 class ConversationViewSet(viewsets.ModelViewSet):
-    queryset = Conversation.objects.all()
     serializer_class = ConversationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        # Only show conversations where the loggedin user is a participant
+        return Conversation.objects.filter(participants=self.request.user)
 
 
 class CommentViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
 
     def perform_create(self, serializer):
-        # Automatically set the user to the logged-in user when posting a comment
         serializer.save(user=self.request.user)
+
+
+# Add MessageViewSet to your views.py
+class MessageViewSet(viewsets.ModelViewSet):
+    queryset = Message.objects.all().order_by("created_at")
+    serializer_class = MessageSerializer
+    permission_classes = [permissions.IsAuthenticated, IsOwnerOrReadOnly]
+
+    def get_queryset(self):
+        # Only show messages belonging to the user's conversations
+        return Message.objects.filter(conversation__participants=self.request.user)
+
+    def perform_create(self, serializer):
+
+        serializer.save(sender=self.request.user)

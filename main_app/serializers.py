@@ -26,11 +26,13 @@ class MessageSerializer(serializers.ModelSerializer):
 
 
 class ConversationSerializer(serializers.ModelSerializer):
+    # This nests the messages so they load with the conversation
     messages = MessageSerializer(many=True, read_only=True)
+    participants = ProfileSerializer(many=True, read_only=True)
 
     class Meta:
         model = Conversation
-        fields = ["id", "is_group", "messages", "created_at"]
+        fields = ["id", "participants", "messages", "updated_at"]
 
 
 class TopicSerializer(serializers.ModelSerializer):
