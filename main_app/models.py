@@ -30,7 +30,7 @@ class Topic(models.Model):
 
 
 class Post(models.Model):
-    user = models.ForeignKey(User, on_激related_name="posts", on_delete=models.CASCADE)
+    user = models.ForeignKey(User, related_name="posts", on_delete=models.CASCADE)
     caption = models.TextField(blank=True)
     media_url = models.URLField()
     is_reel = models.BooleanField(default=True)
