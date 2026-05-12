@@ -1,15 +1,13 @@
 from django.db import models
 from django.contrib.auth.models import User
 
+
 # User
-
-
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
     bio = models.TextField(max_length=500, blank=True)
     profile_picture_url = models.URLField(max_length=500, blank=True)
     location = models.CharField(max_length=100, blank=True)
-    # The Followers table
     following = models.ManyToManyField(
         "self", symmetrical=False, related_name="followers", blank=True
     )
@@ -19,7 +17,7 @@ class Profile(models.Model):
         return f"{self.user.username}'s Profile"
 
 
-#  Content
+# Content
 class Topic(models.Model):
     name = models.CharField(max_length=50, unique=True)
 
@@ -32,6 +30,8 @@ class Post(models.Model):
     caption = models.TextField(blank=True)
     media_url = models.URLField()
     is_reel = models.BooleanField(default=True)
+    view_count = models.IntegerField(default=0)
+    topics = models.ManyToManyField(Topic, related_name="posts", blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     likes = models.ManyToManyField(User, related_name="liked_posts", blank=True)
     favorites = models.ManyToManyField(User, related_name="favorited_posts", blank=True)
@@ -61,26 +61,16 @@ class Comment(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="comments")
     body = models.TextField(max_length=500)
-    # This handles the 'parent_comment_id' from diagram for threaded replies
     parent_comment = models.ForeignKey(
         "self", on_delete=models.CASCADE, null=True, blank=True, related_name="replies"
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
 
-#  Messaging System
-
-
 class Conversation(models.Model):
     is_group = models.BooleanField(default=False)
+    participants = models.ManyToManyField(User, related_name="conversations")
     created_at = models.DateTimeField(auto_now_add=True)
-
-
-class Participant(models.Model):
-    conversation = models.ForeignKey(
-        Conversation, on_delete=models.CASCADE, related_name="participants"
-    )
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
 
 
 class Message(models.Model):

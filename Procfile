@@ -1,1 +1,1 @@
-web: gunicorn MockApp.wsgi
+web: daphne -b 0.0.0.0 -p $PORT MockApp.asgi:application
