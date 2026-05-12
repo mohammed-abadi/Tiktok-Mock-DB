@@ -99,16 +99,17 @@ class CommentViewSet(viewsets.ModelViewSet):
         serializer.save(user=self.request.user)
 
 
-# Add MessageViewSet to your views.py
 class MessageViewSet(viewsets.ModelViewSet):
-    queryset = Message.objects.all().order_by("created_at")
+
+    queryset = Message.objects.all().order_by("sent_at")
     serializer_class = MessageSerializer
     permission_classes = [permissions.IsAuthenticated, IsOwnerOrReadOnly]
 
     def get_queryset(self):
-        # Only show messages belonging to the user's conversations
-        return Message.objects.filter(conversation__participants=self.request.user)
+
+        return Message.objects.filter(
+            conversation__participants__user=self.request.user
+        ).order_by("sent_at")
 
     def perform_create(self, serializer):
-
         serializer.save(sender=self.request.user)
