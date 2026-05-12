@@ -12,9 +12,12 @@ from .views import (
 router = DefaultRouter()
 router.register(r"posts", PostViewSet)
 router.register(r"profiles", ProfileViewSet)
-router.register(r"conversations", ConversationViewSet)
+
+router.register(r"conversations", ConversationViewSet, basename="conversation")
+
 router.register(r"comments", CommentViewSet)
-router.register(r"messages", MessageViewSet)
+
+router.register(r"messages", MessageViewSet, basename="message")
 
 urlpatterns = [
     path("reels/", ReelListView.as_view(), name="reel-list"),

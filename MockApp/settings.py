@@ -71,9 +71,20 @@ TEMPLATES = [
 ]
 
 # Database setup for Render
+import os
+import dj_database_url
+
+# Render provides the DATABASE_URL environment variable automatically
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
 DATABASES = {
     "default": dj_database_url.config(
-        default="postgres://ichi:3713@127.0.0.1:5432/tiktok_db", conn_max_age=600
+        default=(
+            DATABASE_URL
+            if DATABASE_URL
+            else "postgresql://ichi:2YJMYucvjBllqFxcBQV8NCsTPgPQWZJ0@dpg-d80cqiegvqtc73de7c8g-a/tiktok_db_yf8w"
+        ),
+        conn_max_age=600,
     )
 }
 
