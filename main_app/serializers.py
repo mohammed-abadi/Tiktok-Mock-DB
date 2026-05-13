@@ -94,14 +94,24 @@ class PostSerializer(serializers.ModelSerializer):
     comments = CommentSerializer(many=True, read_only=True)
     likes_count = serializers.IntegerField(source="likes.count", read_only=True)
 
+    # Added this to easily show favorite counts if needed later
+    favorites_count = serializers.IntegerField(source="favorites.count", read_only=True)
+
     class Meta:
         model = Post
         fields = "__all__"
 
     def get_user(self, obj):
+        # Safety catch: prevents 500 errors if a user somehow doesn't have a profile yet
+        try:
+            profile_url = obj.user.profile.profile_picture_url
+        except Exception:
+            profile_url = ""
+
         return {
+            "id": obj.user.id,  # FIXED: Added ID for routing
             "username": obj.user.username,
-            "profile_pic": obj.user.profile.profile_picture_url,
+            "profile_picture_url": profile_url,  # FIXED: Matched frontend naming
         }
 
 
