@@ -82,7 +82,7 @@ DATABASES = {
         default=(
             DATABASE_URL
             if DATABASE_URL
-            else "postgresql://tiktok_db_2_user:XmuNre1DvCaNGG3xIBpLYZOb9bj0aKZ0@dpg-d81r8v50lvsc73btgoa0-a/tiktok_db_2"
+            else "postgresql://tiktok_db_2_user:XmuNre1DvCaNGG3xIBpLYZOb9bj0aKZ0@dpg-d81r8v50lvsc73btgoa0-a.oregon-postgres.render.com/tiktok_db_2"
         ),
         conn_max_age=600,
     )

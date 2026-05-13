@@ -47,6 +47,9 @@ class CreateUserView(generics.CreateAPIView):
     permission_classes = [permissions.AllowAny]
 
 
+# Replace your current ProfileViewSet and PostViewSet with this:
+
+
 class ProfileViewSet(viewsets.ModelViewSet):
     """
     Handles profile customization, viewing, and user search.
@@ -69,9 +72,6 @@ class ProfileViewSet(viewsets.ModelViewSet):
         detail=False, methods=["get"], permission_classes=[permissions.IsAuthenticated]
     )
     def me(self, request):
-        """
-        Custom endpoint to fetch the logged-in user's profile info.
-        """
         profile, created = Profile.objects.get_or_create(user=request.user)
         serializer = self.get_serializer(profile)
         return Response(serializer.data)
@@ -80,20 +80,15 @@ class ProfileViewSet(viewsets.ModelViewSet):
         detail=False, methods=["post"], permission_classes=[permissions.IsAuthenticated]
     )
     def update_username(self, request):
-        """
-        Endpoint to change username with an availability check.
-        """
         new_username = request.data.get("new_username")
         if not new_username:
             return Response(
                 {"error": "New username required"}, status=status.HTTP_400_BAD_REQUEST
             )
-
         if User.objects.filter(username=new_username).exists():
             return Response(
                 {"error": "Username already taken"}, status=status.HTTP_400_BAD_REQUEST
             )
-
         user = request.user
         user.username = new_username
         user.save()
@@ -101,16 +96,26 @@ class ProfileViewSet(viewsets.ModelViewSet):
             {"message": "Username updated successfully", "new_username": new_username}
         )
 
+    # MOVED FOLLOW HERE - Now it correctly targets a Profile
+    @action(
+        detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated]
+    )
+    def follow(self, request, pk=None):
+        profile_to_follow = self.get_object()
+        user_profile = request.user.profile
 
-class ReelListView(generics.ListAPIView):
-    """
-    Specifically fetches videos marked as reels for the main feed.
-    """
+        if user_profile == profile_to_follow:
+            return Response(
+                {"error": "You cannot follow yourself"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-    queryset = Post.objects.filter(is_reel=True).order_by("-created_at")
-    serializer_class = PostSerializer
-    pagination_class = StandardResultsSetPagination
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+        if user_profile.following.filter(id=profile_to_follow.id).exists():
+            user_profile.following.remove(profile_to_follow)
+            return Response({"status": "unfollowed"})
+
+        user_profile.following.add(profile_to_follow)
+        return Response({"status": "followed"})
 
 
 class PostViewSet(viewsets.ModelViewSet):
@@ -168,29 +173,6 @@ class PostViewSet(viewsets.ModelViewSet):
         return Response(
             PostSerializer(repost_post).data, status=status.HTTP_201_CREATED
         )
-
-    @action(
-        detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated]
-    )
-    def follow(self, request, pk=None):
-        """
-        Custom endpoint to follow/unfollow a profile.
-        """
-        profile_to_follow = self.get_object()
-        user_profile = request.user.profile
-
-        if user_profile == profile_to_follow:
-            return Response(
-                {"error": "You cannot follow yourself"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        if user_profile.following.filter(id=profile_to_follow.id).exists():
-            user_profile.following.remove(profile_to_follow)
-            return Response({"status": "unfollowed"})
-
-        user_profile.following.add(profile_to_follow)
-        return Response({"status": "followed"})
 
 
 class ConversationViewSet(viewsets.ModelViewSet):
