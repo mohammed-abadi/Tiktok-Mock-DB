@@ -169,6 +169,29 @@ class PostViewSet(viewsets.ModelViewSet):
             PostSerializer(repost_post).data, status=status.HTTP_201_CREATED
         )
 
+    @action(
+        detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated]
+    )
+    def follow(self, request, pk=None):
+        """
+        Custom endpoint to follow/unfollow a profile.
+        """
+        profile_to_follow = self.get_object()
+        user_profile = request.user.profile
+
+        if user_profile == profile_to_follow:
+            return Response(
+                {"error": "You cannot follow yourself"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if user_profile.following.filter(id=profile_to_follow.id).exists():
+            user_profile.following.remove(profile_to_follow)
+            return Response({"status": "unfollowed"})
+
+        user_profile.following.add(profile_to_follow)
+        return Response({"status": "followed"})
+
 
 class ConversationViewSet(viewsets.ModelViewSet):
     """
