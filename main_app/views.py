@@ -17,6 +17,10 @@ from .serializers import (
 
 
 class IsOwnerOrReadOnly(permissions.BasePermission):
+    """
+    Custom permission to only allow owners of an object to edit it.
+    """
+
     def has_object_permission(self, request, view, obj):
         if request.method in permissions.SAFE_METHODS:
             return True
@@ -96,7 +100,6 @@ class ProfileViewSet(viewsets.ModelViewSet):
 
 
 class ReelListView(generics.ListAPIView):
-
     queryset = Post.objects.filter(is_reel=True).order_by("-created_at")
     serializer_class = PostSerializer
     pagination_class = StandardResultsSetPagination
@@ -109,20 +112,50 @@ class PostViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = Post.objects.all().order_by("-created_at")
+
         search = self.request.query_params.get("search")
         tag = self.request.query_params.get("tag")
+        author = self.request.query_params.get("author")
+        is_repost = self.request.query_params.get("is_repost")
+        liked_by_me = self.request.query_params.get("liked_by_me")
+        favorited_by_me = self.request.query_params.get("favorited_by_me")
+
         if search:
             queryset = queryset.filter(
                 Q(caption__icontains=search) | Q(user__username__icontains=search)
             )
         if tag:
             queryset = queryset.filter(topics__name__icontains=tag)
+
+        if author:
+            queryset = queryset.filter(user__username=author)
+        if is_repost == "true":
+            queryset = queryset.filter(is_repost=True)
+        if liked_by_me == "true" and self.request.user.is_authenticated:
+            queryset = queryset.filter(likes=self.request.user)
+        if favorited_by_me == "true" and self.request.user.is_authenticated:
+            queryset = queryset.filter(favorites=self.request.user)
+
         return queryset
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
-    @action(detail=True, methods=["post"])
+    @action(
+        detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated]
+    )
+    def record_view(self, request, pk=None):
+        post = self.get_object()
+        if request.user not in post.viewers.all():
+            post.viewers.add(request.user)
+            post.view_count += 1
+            post.save()
+            return Response({"status": "view_recorded", "view_count": post.view_count})
+        return Response({"status": "already_viewed", "view_count": post.view_count})
+
+    @action(
+        detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated]
+    )
     def toggle_like(self, request, pk=None):
         post = self.get_object()
         if request.user in post.likes.all():
@@ -131,7 +164,9 @@ class PostViewSet(viewsets.ModelViewSet):
         post.likes.add(request.user)
         return Response({"status": "liked", "likes_count": post.likes.count()})
 
-    @action(detail=True, methods=["post"])
+    @action(
+        detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated]
+    )
     def toggle_favorite(self, request, pk=None):
         post = self.get_object()
         if request.user in post.favorites.all():
@@ -140,7 +175,9 @@ class PostViewSet(viewsets.ModelViewSet):
         post.favorites.add(request.user)
         return Response({"status": "favorited"})
 
-    @action(detail=True, methods=["post"])
+    @action(
+        detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated]
+    )
     def repost(self, request, pk=None):
         original = self.get_object()
         repost_post = Post.objects.create(

@@ -29,6 +29,7 @@ class Post(models.Model):
     media_url = models.URLField()
     is_reel = models.BooleanField(default=True)
     view_count = models.IntegerField(default=0)
+    viewers = models.ManyToManyField(User, related_name="viewed_posts", blank=True)
     topics = models.ManyToManyField(Topic, related_name="posts", blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     likes = models.ManyToManyField(User, related_name="liked_posts", blank=True)
