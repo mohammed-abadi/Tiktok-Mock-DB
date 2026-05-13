@@ -17,10 +17,6 @@ from .serializers import (
 
 
 class IsOwnerOrReadOnly(permissions.BasePermission):
-    """
-    Custom permission to only allow owners of an object to edit it.
-    """
-
     def has_object_permission(self, request, view, obj):
         if request.method in permissions.SAFE_METHODS:
             return True
@@ -81,6 +77,20 @@ class ProfileViewSet(viewsets.ModelViewSet):
             {"message": "Username updated successfully", "new_username": new_username}
         )
 
+    # NEW: Secure Account Deletion Endpoint
+    @action(
+        detail=False,
+        methods=["delete"],
+        permission_classes=[permissions.IsAuthenticated],
+    )
+    def delete_account(self, request):
+        user = request.user
+        user.delete()  # This cascades and deletes their profile, posts, likes, etc.
+        return Response(
+            {"status": "Account deleted successfully"},
+            status=status.HTTP_204_NO_CONTENT,
+        )
+
     @action(
         detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated]
     )
@@ -92,9 +102,11 @@ class ProfileViewSet(viewsets.ModelViewSet):
                 {"error": "You cannot follow yourself"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
         if user_profile.following.filter(id=profile_to_follow.id).exists():
             user_profile.following.remove(profile_to_follow)
             return Response({"status": "unfollowed"})
+
         user_profile.following.add(profile_to_follow)
         return Response({"status": "followed"})
 
@@ -126,11 +138,15 @@ class PostViewSet(viewsets.ModelViewSet):
             )
         if tag:
             queryset = queryset.filter(topics__name__icontains=tag)
-
         if author:
             queryset = queryset.filter(user__username=author)
+
+        # Repost Isolation Logic
         if is_repost == "true":
             queryset = queryset.filter(is_repost=True)
+        elif is_repost == "false":
+            queryset = queryset.filter(is_repost=False)
+
         if liked_by_me == "true" and self.request.user.is_authenticated:
             queryset = queryset.filter(likes=self.request.user)
         if favorited_by_me == "true" and self.request.user.is_authenticated:
@@ -180,16 +196,28 @@ class PostViewSet(viewsets.ModelViewSet):
     )
     def repost(self, request, pk=None):
         original = self.get_object()
-        repost_post = Post.objects.create(
+
+        # If trying to repost a repost, link it to the actual original
+        if original.is_repost and original.original_post:
+            original = original.original_post
+
+        existing_repost = Post.objects.filter(
+            user=request.user, is_repost=True, original_post=original
+        ).first()
+
+        # Un-repost if it exists
+        if existing_repost:
+            existing_repost.delete()
+            return Response({"status": "unreposted"})
+
+        Post.objects.create(
             user=request.user,
             media_url=original.media_url,
             caption=f"Reposted from @{original.user.username}: {original.caption}",
             is_repost=True,
             original_post=original,
         )
-        return Response(
-            PostSerializer(repost_post).data, status=status.HTTP_201_CREATED
-        )
+        return Response({"status": "reposted"})
 
 
 class ConversationViewSet(viewsets.ModelViewSet):

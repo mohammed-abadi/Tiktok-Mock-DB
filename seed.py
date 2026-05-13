@@ -2,6 +2,7 @@ import os
 import django
 import random
 
+# Make sure "MockApp.settings" matches your actual project folder name!
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "MockApp.settings")
 django.setup()
 
@@ -14,6 +15,7 @@ def seed_data():
     User.objects.exclude(is_superuser=True).delete()
     Topic.objects.all().delete()
     Conversation.objects.all().delete()
+    Post.objects.all().delete()  # Good practice to clear old posts too!
 
     print("🏷️ Creating Topics...")
     topic_names = ["Coding", "Comedy", "Gaming", "Dance", "Tech"]
@@ -67,14 +69,29 @@ def seed_data():
     print("🎬 Creating Viral Reels & Generating Engagement...")
     for i in range(1, 16):
         post_author = random.choice(created_users)
+
+        # 1. Create the post
         post = Post.objects.create(
             user=post_author,
             caption=f"Check out my awesome video! Drop a like! 🔥 #{random.choice(topic_names).lower()}",
             media_url="https://www.w3schools.com/html/mov_bbb.mp4",
             is_reel=True,
-            view_count=random.randint(100, 50000),
+            view_count=random.randint(10, 500),  # Starting view count
         )
+
+        # 2. Add Topics
         post.topics.add(*random.sample(topics, k=random.randint(1, 2)))
+
+        # 3. NEW: Add random Likes so your Profile "Liked" tab has data!
+        random_likers = random.sample(created_users, k=random.randint(0, 3))
+        post.likes.add(*random_likers)
+
+        # 4. NEW: Add random Favorites so your Profile "Private" tab has data!
+        random_favoriters = random.sample(created_users, k=random.randint(0, 2))
+        post.favorites.add(*random_favoriters)
+
+        # 5. NEW: Add random distinct viewers (syncing with your new view logic)
+        post.viewers.add(*random.sample(created_users, k=random.randint(1, 4)))
 
     print("\n✅ Advanced Database successfully seeded!")
     print(

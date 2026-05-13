@@ -74,18 +74,15 @@ TEMPLATES = [
 import os
 import dj_database_url
 
-# Render provides the DATABASE_URL environment variable automatically
-DATABASE_URL = os.environ.get("DATABASE_URL")
-
 DATABASES = {
-    "default": dj_database_url.config(
-        default=(
-            DATABASE_URL
-            if DATABASE_URL
-            else "postgresql://tiktok_db_2_user:XmuNre1DvCaNGG3xIBpLYZOb9bj0aKZ0@dpg-d81r8v50lvsc73btgoa0-a.oregon-postgres.render.com/tiktok_db_2"
-        ),
-        conn_max_age=600,
-    )
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "tiktok_db",  # The name of your database
+        "USER": "ichi",  # Your Postgres username
+        "PASSWORD": "3713",  # Your password
+        "HOST": "127.0.0.1",  # Running on your local machine
+        "PORT": "5432",  # Default Postgres port
+    }
 }
 
 AUTH_PASSWORD_VALIDATORS = [
