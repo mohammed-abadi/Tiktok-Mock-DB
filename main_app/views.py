@@ -17,10 +17,6 @@ from .serializers import (
 
 
 class IsOwnerOrReadOnly(permissions.BasePermission):
-    """
-    Custom permission to only allow owners of an object to edit it.
-    """
-
     def has_object_permission(self, request, view, obj):
         if request.method in permissions.SAFE_METHODS:
             return True
@@ -28,33 +24,18 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
 
 
 class StandardResultsSetPagination(PageNumberPagination):
-    """
-    Standard pagination for consistent feed loading.
-    """
-
     page_size = 10
     page_size_query_param = "page_size"
     max_page_size = 100
 
 
 class CreateUserView(generics.CreateAPIView):
-    """
-    Handles revamped registration: Username, Email, Name, and Passwords.
-    """
-
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
     permission_classes = [permissions.AllowAny]
 
 
-# Replace your current ProfileViewSet and PostViewSet with this:
-
-
 class ProfileViewSet(viewsets.ModelViewSet):
-    """
-    Handles profile customization, viewing, and user search.
-    """
-
     serializer_class = ProfileSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
 
@@ -96,33 +77,33 @@ class ProfileViewSet(viewsets.ModelViewSet):
             {"message": "Username updated successfully", "new_username": new_username}
         )
 
-    # MOVED FOLLOW HERE - Now it correctly targets a Profile
     @action(
         detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated]
     )
     def follow(self, request, pk=None):
         profile_to_follow = self.get_object()
         user_profile = request.user.profile
-
         if user_profile == profile_to_follow:
             return Response(
                 {"error": "You cannot follow yourself"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
         if user_profile.following.filter(id=profile_to_follow.id).exists():
             user_profile.following.remove(profile_to_follow)
             return Response({"status": "unfollowed"})
-
         user_profile.following.add(profile_to_follow)
         return Response({"status": "followed"})
 
 
-class PostViewSet(viewsets.ModelViewSet):
-    """
-    Handles video uploads, feed filtering, likes, favorites, and reposts.
-    """
+class ReelListView(generics.ListAPIView):
 
+    queryset = Post.objects.filter(is_reel=True).order_by("-created_at")
+    serializer_class = PostSerializer
+    pagination_class = StandardResultsSetPagination
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+
+class PostViewSet(viewsets.ModelViewSet):
     serializer_class = PostSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
 
@@ -130,7 +111,6 @@ class PostViewSet(viewsets.ModelViewSet):
         queryset = Post.objects.all().order_by("-created_at")
         search = self.request.query_params.get("search")
         tag = self.request.query_params.get("tag")
-
         if search:
             queryset = queryset.filter(
                 Q(caption__icontains=search) | Q(user__username__icontains=search)
@@ -176,10 +156,6 @@ class PostViewSet(viewsets.ModelViewSet):
 
 
 class ConversationViewSet(viewsets.ModelViewSet):
-    """
-    Manages user conversations.
-    """
-
     serializer_class = ConversationSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -188,10 +164,6 @@ class ConversationViewSet(viewsets.ModelViewSet):
 
 
 class CommentViewSet(viewsets.ModelViewSet):
-    """
-    Manages post comments.
-    """
-
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
@@ -201,10 +173,6 @@ class CommentViewSet(viewsets.ModelViewSet):
 
 
 class MessageViewSet(viewsets.ModelViewSet):
-    """
-    Manages individual messages within conversations.
-    """
-
     serializer_class = MessageSerializer
     permission_classes = [permissions.IsAuthenticated, IsOwnerOrReadOnly]
 
@@ -218,10 +186,6 @@ class MessageViewSet(viewsets.ModelViewSet):
 
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
-    """
-    Optional: Allows the frontend to fetch basic details of any user.
-    """
-
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
