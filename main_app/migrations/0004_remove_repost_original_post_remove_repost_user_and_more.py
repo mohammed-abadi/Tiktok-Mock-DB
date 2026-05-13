@@ -7,51 +7,57 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('main_app', '0003_remove_post_topics_remove_post_view_count_and_more'),
+        ("main_app", "0003_remove_post_topics_remove_post_view_count_and_more"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='repost',
-            name='original_post',
+            model_name="repost",
+            name="original_post",
         ),
         migrations.RemoveField(
-            model_name='repost',
-            name='user',
+            model_name="repost",
+            name="user",
         ),
         migrations.RemoveField(
-            model_name='conversation',
-            name='is_group',
+            model_name="conversation",
+            name="is_group",
         ),
         migrations.RemoveField(
-            model_name='message',
-            name='is_read',
+            model_name="message",
+            name="is_read",
         ),
         migrations.AddField(
-            model_name='conversation',
-            name='participants',
-            field=models.ManyToManyField(related_name='conversations', to=settings.AUTH_USER_MODEL),
+            model_name="conversation",
+            name="participants",
+            field=models.ManyToManyField(
+                related_name="conversations", to=settings.AUTH_USER_MODEL
+            ),
         ),
         migrations.AddField(
-            model_name='post',
-            name='topics',
-            field=models.ManyToManyField(blank=True, related_name='posts', to='main_app.topic'),
+            model_name="post",
+            name="topics",
+            field=models.ManyToManyField(
+                blank=True, related_name="posts", to="main_app.topic"
+            ),
         ),
         migrations.AddField(
-            model_name='post',
-            name='view_count',
+            model_name="post",
+            name="view_count",
             field=models.IntegerField(default=0),
         ),
         migrations.AddField(
-            model_name='post',
-            name='viewers',
-            field=models.ManyToManyField(blank=True, related_name='viewed_posts', to=settings.AUTH_USER_MODEL),
+            model_name="post",
+            name="viewers",
+            field=models.ManyToManyField(
+                blank=True, related_name="viewed_posts", to=settings.AUTH_USER_MODEL
+            ),
         ),
         migrations.DeleteModel(
-            name='Participant',
+            name="Participant",
         ),
         migrations.DeleteModel(
-            name='Repost',
+            name="Repost",
         ),
     ]

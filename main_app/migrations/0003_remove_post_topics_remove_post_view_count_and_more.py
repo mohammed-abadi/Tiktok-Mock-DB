@@ -7,36 +7,42 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('main_app', '0002_conversation_and_more'),
+        ("main_app", "0002_conversation_and_more"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='post',
-            name='topics',
+            model_name="post",
+            name="topics",
         ),
         migrations.RemoveField(
-            model_name='post',
-            name='view_count',
+            model_name="post",
+            name="view_count",
         ),
         migrations.AddField(
-            model_name='post',
-            name='is_repost',
+            model_name="post",
+            name="is_repost",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='post',
-            name='original_post',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='self_reposts', to='main_app.post'),
+            model_name="post",
+            name="original_post",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="self_reposts",
+                to="main_app.post",
+            ),
         ),
         migrations.AlterField(
-            model_name='post',
-            name='caption',
+            model_name="post",
+            name="caption",
             field=models.TextField(blank=True),
         ),
         migrations.AlterField(
-            model_name='post',
-            name='media_url',
+            model_name="post",
+            name="media_url",
             field=models.URLField(),
         ),
     ]
