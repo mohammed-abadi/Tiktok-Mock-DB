@@ -13,7 +13,7 @@ ALLOWED_HOSTS = ["localhost", "127.0.0.1", ".onrender.com"]
 
 # Application definition
 INSTALLED_APPS = [
-    "daphne",  # Must be at the top for WebSockets
+    "daphne",  # MUST be at the very top for WebSockets to work
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -45,15 +45,8 @@ ROOT_URLCONF = "MockApp.urls"
 ASGI_APPLICATION = "MockApp.asgi.application"
 WSGI_APPLICATION = "MockApp.wsgi.application"
 
-# Redis Configuration (For Real-time DMs)
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [os.environ.get("REDIS_URL", "redis://127.0.0.1:6379")],
-        },
-    },
-}
+# Use In-Memory Channel Layer for Local Development (No Redis needed!)
+CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
 
 TEMPLATES = [
     {
@@ -70,18 +63,15 @@ TEMPLATES = [
     },
 ]
 
-# Database setup for Render
-import os
-import dj_database_url
-
+# Database setup
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": "tiktok_db",  # The name of your database
-        "USER": "ichi",  # Your Postgres username
-        "PASSWORD": "3713",  # Your password
-        "HOST": "127.0.0.1",  # Running on your local machine
-        "PORT": "5432",  # Default Postgres port
+        "NAME": "tiktok_db",
+        "USER": "ichi",
+        "PASSWORD": "3713",
+        "HOST": "127.0.0.1",
+        "PORT": "5432",
     }
 }
 
@@ -94,17 +84,14 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 
-
 STATIC_URL = "static/"
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
-
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
@@ -114,7 +101,7 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 10,
 }
 
-
+# CORS configuration to allow React to talk to Django
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://localhost:5173",

@@ -1,23 +1,37 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Profile, Post, Comment, Topic, Message, Conversation
+from .models import Profile, Post, Comment, Topic, Message, Conversation, Notification
 
 
 class ProfileSerializer(serializers.ModelSerializer):
     username = serializers.ReadOnlyField(source="user.username")
     name = serializers.ReadOnlyField(source="user.first_name")
+    user_id = serializers.ReadOnlyField(source="user.id")
+    followers_count = serializers.IntegerField(source="followers.count", read_only=True)
+    following_count = serializers.IntegerField(source="following.count", read_only=True)
+    is_followed_by_me = serializers.SerializerMethodField()
 
     class Meta:
         model = Profile
         fields = [
             "id",
+            "user_id",
             "username",
             "name",
             "profile_picture_url",
             "bio",
             "location",
+            "followers_count",
+            "following_count",
+            "is_followed_by_me",
             "created_at",
         ]
+
+    def get_is_followed_by_me(self, obj):
+        request = self.context.get("request")
+        if request and request.user.is_authenticated:
+            return obj.followers.filter(id=request.user.profile.id).exists()
+        return False
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -82,7 +96,15 @@ class CommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Comment
-        fields = ["id", "user", "body", "parent_comment", "has_replies", "created_at"]
+        fields = [
+            "id",
+            "user",
+            "post",
+            "body",
+            "parent_comment",
+            "has_replies",
+            "created_at",
+        ]
 
     def get_has_replies(self, obj):
         return obj.replies.exists()
@@ -93,25 +115,25 @@ class PostSerializer(serializers.ModelSerializer):
     topics = TopicSerializer(many=True, read_only=True)
     comments = CommentSerializer(many=True, read_only=True)
     likes_count = serializers.IntegerField(source="likes.count", read_only=True)
-
-    # Added this to easily show favorite counts if needed later
     favorites_count = serializers.IntegerField(source="favorites.count", read_only=True)
+    comments_count = serializers.IntegerField(source="comments.count", read_only=True)
 
     class Meta:
         model = Post
         fields = "__all__"
 
     def get_user(self, obj):
-        # Safety catch: prevents 500 errors if a user somehow doesn't have a profile yet
         try:
             profile_url = obj.user.profile.profile_picture_url
+            profile_id = obj.user.profile.id
         except Exception:
             profile_url = ""
-
+            profile_id = None
         return {
-            "id": obj.user.id,  # FIXED: Added ID for routing
+            "id": obj.user.id,
+            "profile_id": profile_id,
             "username": obj.user.username,
-            "profile_picture_url": profile_url,  # FIXED: Matched frontend naming
+            "profile_picture_url": profile_url,
         }
 
 
@@ -120,7 +142,15 @@ class MessageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Message
-        fields = ["id", "conversation", "sender", "sender_name", "content", "sent_at"]
+        fields = [
+            "id",
+            "conversation",
+            "sender",
+            "sender_name",
+            "content",
+            "sent_at",
+            "is_edited",
+        ]
 
 
 class ConversationSerializer(serializers.ModelSerializer):
@@ -133,4 +163,29 @@ class ConversationSerializer(serializers.ModelSerializer):
 
     def get_participants(self, obj):
         profiles = Profile.objects.filter(user__in=obj.participants.all())
-        return ProfileSerializer(profiles, many=True).data
+        return ProfileSerializer(profiles, many=True, context=self.context).data
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    sender_name = serializers.ReadOnlyField(source="sender.username")
+    sender_avatar = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Notification
+        fields = [
+            "id",
+            "recipient",
+            "sender",
+            "sender_name",
+            "sender_avatar",
+            "notification_type",
+            "post",
+            "created_at",
+            "is_read",
+        ]
+
+    def get_sender_avatar(self, obj):
+        try:
+            return obj.sender.profile.profile_picture_url
+        except Exception:
+            return f"https://ui-avatars.com/api/?name={obj.sender.username}"

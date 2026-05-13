@@ -7,46 +7,75 @@ from django.contrib.auth.models import User
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        # The room name comes from the URL (routing.py)
         self.room_name = self.scope["url_route"]["kwargs"]["room_name"]
         self.room_group_name = f"chat_{self.room_name}"
-
-        # Join the room group
         await self.channel_layer.group_add(self.room_group_name, self.channel_name)
         await self.accept()
 
     async def disconnect(self, close_code):
-        # Leave the room group
         await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
 
-    # Receive message from WebSocket (from the React frontend)
     async def receive(self, text_data):
         data = json.loads(text_data)
-        message = data["message"]
-        username = data["username"]
-        room_id = data["room_id"]
+        action = data.get("action", "send")
+        if action == "send":
+            message = data["message"]
+            username = data["username"]
+            room_id = data["room_id"]
 
-        # Save to database (using sync_to_async because Django ORM is synchronous)
-        await self.save_message(username, room_id, message)
+            msg_id = await self.save_message(username, room_id, message)
 
-        # Send message to the room group
-        await self.channel_layer.group_send(
-            self.room_group_name,
-            {"type": "chat_message", "message": message, "username": username},
-        )
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    "type": "chat_event",
+                    "action": "send",
+                    "message": message,
+                    "username": username,
+                    "msg_id": msg_id,
+                },
+            )
 
-    # Receive message from the room group
-    async def chat_message(self, event):
-        message = event["message"]
-        username = event["username"]
+        elif action == "edit":
+            msg_id = data["msg_id"]
+            new_content = data["message"]
+            await self.edit_message(msg_id, new_content)
 
-        # Send message to the actual WebSocket browser client
-        await self.send(
-            text_data=json.dumps({"message": message, "username": username})
-        )
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    "type": "chat_event",
+                    "action": "edit",
+                    "msg_id": msg_id,
+                    "message": new_content,
+                },
+            )
+
+        elif action == "delete":
+            msg_id = data["msg_id"]
+            await self.delete_message(msg_id)
+
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {"type": "chat_event", "action": "delete", "msg_id": msg_id},
+            )
+
+    async def chat_event(self, event):
+        await self.send(text_data=json.dumps(event))
 
     @sync_to_async
     def save_message(self, username, room_id, content):
         user = User.objects.get(username=username)
         conversation = Conversation.objects.get(id=room_id)
-        Message.objects.create(sender=user, conversation=conversation, content=content)
+        msg = Message.objects.create(
+            sender=user, conversation=conversation, content=content
+        )
+        return msg.id
+
+    @sync_to_async
+    def edit_message(self, msg_id, content):
+        Message.objects.filter(id=msg_id).update(content=content, is_edited=True)
+
+    @sync_to_async
+    def delete_message(self, msg_id):
+        Message.objects.filter(id=msg_id).delete()

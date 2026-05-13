@@ -4,7 +4,7 @@ from rest_framework import generics, viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
-from .models import Post, Profile, Conversation, Message, Comment
+from .models import Post, Profile, Conversation, Message, Comment, Notification
 from .serializers import (
     PostSerializer,
     ProfileSerializer,
@@ -13,6 +13,7 @@ from .serializers import (
     CommentSerializer,
     UserSerializer,
     RegisterSerializer,
+    NotificationSerializer,
 )
 
 
@@ -20,7 +21,9 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         if request.method in permissions.SAFE_METHODS:
             return True
-        return obj.user == request.user
+        if hasattr(obj, "sender"):
+            return obj.sender == request.user
+        return getattr(obj, "user", None) == request.user
 
 
 class StandardResultsSetPagination(PageNumberPagination):
@@ -47,49 +50,34 @@ class ProfileViewSet(viewsets.ModelViewSet):
                 Q(user__username__icontains=search)
                 | Q(user__first_name__icontains=search)
             )
+
+        user_id = self.request.query_params.get("user")
+        if user_id:
+            queryset = queryset.filter(user__id=user_id)
+
+        followed_by_me = self.request.query_params.get("followed_by_me")
+        if followed_by_me == "true" and self.request.user.is_authenticated:
+            queryset = queryset.filter(followers=self.request.user.profile)
+
         return queryset
 
     @action(
         detail=False, methods=["get"], permission_classes=[permissions.IsAuthenticated]
     )
     def me(self, request):
-        profile, created = Profile.objects.get_or_create(user=request.user)
-        serializer = self.get_serializer(profile)
-        return Response(serializer.data)
+        profile, _ = Profile.objects.get_or_create(user=request.user)
+        return Response(self.get_serializer(profile).data)
 
     @action(
         detail=False, methods=["post"], permission_classes=[permissions.IsAuthenticated]
     )
     def update_username(self, request):
         new_username = request.data.get("new_username")
-        if not new_username:
-            return Response(
-                {"error": "New username required"}, status=status.HTTP_400_BAD_REQUEST
-            )
         if User.objects.filter(username=new_username).exists():
-            return Response(
-                {"error": "Username already taken"}, status=status.HTTP_400_BAD_REQUEST
-            )
-        user = request.user
-        user.username = new_username
-        user.save()
-        return Response(
-            {"message": "Username updated successfully", "new_username": new_username}
-        )
-
-    # NEW: Secure Account Deletion Endpoint
-    @action(
-        detail=False,
-        methods=["delete"],
-        permission_classes=[permissions.IsAuthenticated],
-    )
-    def delete_account(self, request):
-        user = request.user
-        user.delete()  # This cascades and deletes their profile, posts, likes, etc.
-        return Response(
-            {"status": "Account deleted successfully"},
-            status=status.HTTP_204_NO_CONTENT,
-        )
+            return Response({"error": "Username taken"}, status=400)
+        request.user.username = new_username
+        request.user.save()
+        return Response({"message": "Updated"})
 
     @action(
         detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated]
@@ -98,24 +86,41 @@ class ProfileViewSet(viewsets.ModelViewSet):
         profile_to_follow = self.get_object()
         user_profile = request.user.profile
         if user_profile == profile_to_follow:
-            return Response(
-                {"error": "You cannot follow yourself"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return Response({"error": "Cannot follow self"}, status=400)
 
         if user_profile.following.filter(id=profile_to_follow.id).exists():
             user_profile.following.remove(profile_to_follow)
+            Notification.objects.filter(
+                recipient=profile_to_follow.user,
+                sender=request.user,
+                notification_type="follow",
+            ).delete()
             return Response({"status": "unfollowed"})
 
         user_profile.following.add(profile_to_follow)
+        Notification.objects.get_or_create(
+            recipient=profile_to_follow.user,
+            sender=request.user,
+            notification_type="follow",
+        )
         return Response({"status": "followed"})
 
+    @action(
+        detail=False, methods=["post"], permission_classes=[permissions.IsAuthenticated]
+    )
+    def change_password(self, request):
+        user = request.user
+        new_password = request.data.get("new_password")
+        password_confirm = request.data.get("password_confirm")
 
-class ReelListView(generics.ListAPIView):
-    queryset = Post.objects.filter(is_reel=True).order_by("-created_at")
-    serializer_class = PostSerializer
-    pagination_class = StandardResultsSetPagination
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+        if not new_password or new_password != password_confirm:
+            return Response(
+                {"error": "Passwords do not match or are empty"}, status=400
+            )
+
+        user.set_password(new_password)
+        user.save()
+        return Response({"message": "Password updated successfully"})
 
 
 class PostViewSet(viewsets.ModelViewSet):
@@ -124,31 +129,16 @@ class PostViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = Post.objects.all().order_by("-created_at")
-
-        search = self.request.query_params.get("search")
-        tag = self.request.query_params.get("tag")
         author = self.request.query_params.get("author")
         is_repost = self.request.query_params.get("is_repost")
-        liked_by_me = self.request.query_params.get("liked_by_me")
         favorited_by_me = self.request.query_params.get("favorited_by_me")
 
-        if search:
-            queryset = queryset.filter(
-                Q(caption__icontains=search) | Q(user__username__icontains=search)
-            )
-        if tag:
-            queryset = queryset.filter(topics__name__icontains=tag)
         if author:
             queryset = queryset.filter(user__username=author)
-
-        # Repost Isolation Logic
         if is_repost == "true":
             queryset = queryset.filter(is_repost=True)
         elif is_repost == "false":
             queryset = queryset.filter(is_repost=False)
-
-        if liked_by_me == "true" and self.request.user.is_authenticated:
-            queryset = queryset.filter(likes=self.request.user)
         if favorited_by_me == "true" and self.request.user.is_authenticated:
             queryset = queryset.filter(favorites=self.request.user)
 
@@ -166,8 +156,7 @@ class PostViewSet(viewsets.ModelViewSet):
             post.viewers.add(request.user)
             post.view_count += 1
             post.save()
-            return Response({"status": "view_recorded", "view_count": post.view_count})
-        return Response({"status": "already_viewed", "view_count": post.view_count})
+        return Response({"view_count": post.view_count})
 
     @action(
         detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated]
@@ -176,8 +165,21 @@ class PostViewSet(viewsets.ModelViewSet):
         post = self.get_object()
         if request.user in post.likes.all():
             post.likes.remove(request.user)
+            Notification.objects.filter(
+                recipient=post.user,
+                sender=request.user,
+                notification_type="like",
+                post=post,
+            ).delete()
             return Response({"status": "unliked", "likes_count": post.likes.count()})
         post.likes.add(request.user)
+        if post.user != request.user:
+            Notification.objects.get_or_create(
+                recipient=post.user,
+                sender=request.user,
+                notification_type="like",
+                post=post,
+            )
         return Response({"status": "liked", "likes_count": post.likes.count()})
 
     @action(
@@ -196,18 +198,20 @@ class PostViewSet(viewsets.ModelViewSet):
     )
     def repost(self, request, pk=None):
         original = self.get_object()
-
-        # If trying to repost a repost, link it to the actual original
         if original.is_repost and original.original_post:
             original = original.original_post
 
-        existing_repost = Post.objects.filter(
+        existing = Post.objects.filter(
             user=request.user, is_repost=True, original_post=original
         ).first()
-
-        # Un-repost if it exists
-        if existing_repost:
-            existing_repost.delete()
+        if existing:
+            existing.delete()
+            Notification.objects.filter(
+                recipient=original.user,
+                sender=request.user,
+                notification_type="repost",
+                post=original,
+            ).delete()
             return Response({"status": "unreposted"})
 
         Post.objects.create(
@@ -217,6 +221,13 @@ class PostViewSet(viewsets.ModelViewSet):
             is_repost=True,
             original_post=original,
         )
+        if original.user != request.user:
+            Notification.objects.get_or_create(
+                recipient=original.user,
+                sender=request.user,
+                notification_type="repost",
+                post=original,
+            )
         return Response({"status": "reposted"})
 
 
@@ -227,14 +238,80 @@ class ConversationViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return Conversation.objects.filter(participants=self.request.user)
 
+    @action(detail=False, methods=["post"])
+    def get_or_create_direct(self, request):
+        target_user_id = request.data.get("user_id")
+        target_user = User.objects.get(id=target_user_id)
+
+        convs = Conversation.objects.filter(participants=request.user).filter(
+            participants=target_user
+        )
+        for conv in convs:
+            if conv.participants.count() == 2:
+                return Response(
+                    ConversationSerializer(conv, context={"request": request}).data
+                )
+
+        conv = Conversation.objects.create()
+        conv.participants.add(request.user, target_user)
+        return Response(ConversationSerializer(conv, context={"request": request}).data)
+
+    @action(detail=True, methods=["post"])
+    def add_participant(self, request, pk=None):
+        conv = self.get_object()
+        user_id = request.data.get("user_id")
+        user_to_add = User.objects.get(id=user_id)
+        conv.participants.add(user_to_add)
+        return Response(ConversationSerializer(conv, context={"request": request}).data)
+
 
 class CommentViewSet(viewsets.ModelViewSet):
-    queryset = Comment.objects.all()
     serializer_class = CommentSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
 
+    def get_queryset(self):
+        queryset = Comment.objects.all().order_by("-created_at")
+        post_id = self.request.query_params.get("post")
+        if post_id:
+            queryset = queryset.filter(post_id=post_id)
+        return queryset
+
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        comment = serializer.save(user=self.request.user)
+        try:
+            if comment.post.user != self.request.user:
+                Notification.objects.create(
+                    recipient=comment.post.user,
+                    sender=self.request.user,
+                    notification_type="comment",
+                    post=comment.post,
+                )
+        except Exception as e:
+            print(e)
+
+
+class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = NotificationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Notification.objects.filter(recipient=self.request.user).order_by(
+            "-created_at"
+        )
+
+    @action(detail=False, methods=["get"])
+    def unread_count(self, request):
+        count = Notification.objects.filter(
+            recipient=request.user, is_read=False
+        ).count()
+        return Response({"unread_count": count})
+
+    @action(detail=False, methods=["post"])
+    def mark_all_read(self, request):
+        Notification.objects.filter(recipient=request.user, is_read=False).update(
+            is_read=True
+        )
+        return Response({"status": "success"})
 
 
 class MessageViewSet(viewsets.ModelViewSet):
@@ -242,9 +319,13 @@ class MessageViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated, IsOwnerOrReadOnly]
 
     def get_queryset(self):
-        return Message.objects.filter(
+        qs = Message.objects.filter(
             conversation__participants=self.request.user
         ).order_by("sent_at")
+        room_id = self.request.query_params.get("conversation")
+        if room_id:
+            qs = qs.filter(conversation_id=room_id)
+        return qs
 
     def perform_create(self, serializer):
         serializer.save(sender=self.request.user)
