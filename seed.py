@@ -20,7 +20,6 @@ def seed_data():
     topics = [Topic.objects.create(name=name) for name in topic_names]
 
     print("👤 Creating Advanced Users & Profiles...")
-    # Now includes full names and emails!
     users_data = [
         {
             "username": "TiktokDev",
@@ -50,7 +49,6 @@ def seed_data():
 
     created_users = []
     for data in users_data:
-        # Create user with email and name, and give them all 'password123'
         user = User.objects.create_user(
             username=data["username"],
             email=data["email"],
@@ -58,7 +56,6 @@ def seed_data():
             password="password123",
         )
 
-        # Give them an avatar automatically based on their username
         profile, _ = Profile.objects.get_or_create(user=user)
         profile.bio = data["bio"]
         profile.profile_picture_url = (
@@ -68,7 +65,6 @@ def seed_data():
         created_users.append(user)
 
     print("🎬 Creating Viral Reels & Generating Engagement...")
-    # ... (Keep the exact same reel, comment, and chat generation logic from the previous seed.py script here) ...
     for i in range(1, 16):
         post_author = random.choice(created_users)
         post = Post.objects.create(

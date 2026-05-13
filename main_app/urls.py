@@ -12,6 +12,7 @@ from .views import (
     CommentViewSet,
     MessageViewSet,
     CreateUserView,
+    UserViewSet,
 )
 
 router = DefaultRouter()
@@ -20,8 +21,8 @@ router.register(r"profiles", ProfileViewSet, basename="profile")
 router.register(r"conversations", ConversationViewSet, basename="conversation")
 router.register(r"comments", CommentViewSet)
 router.register(r"messages", MessageViewSet, basename="message")
+router.register(r"users", UserViewSet, basename="user")
 
-# auth routes
 urlpatterns = [
     path("token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),

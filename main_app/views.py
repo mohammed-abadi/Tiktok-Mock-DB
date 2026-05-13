@@ -28,6 +28,10 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
 
 
 class StandardResultsSetPagination(PageNumberPagination):
+    """
+    Standard pagination for consistent feed loading.
+    """
+
     page_size = 10
     page_size_query_param = "page_size"
     max_page_size = 100
@@ -167,6 +171,10 @@ class PostViewSet(viewsets.ModelViewSet):
 
 
 class ConversationViewSet(viewsets.ModelViewSet):
+    """
+    Manages user conversations.
+    """
+
     serializer_class = ConversationSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -175,24 +183,40 @@ class ConversationViewSet(viewsets.ModelViewSet):
 
 
 class CommentViewSet(viewsets.ModelViewSet):
+    """
+    Manages post comments.
+    """
+
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
 
     def perform_create(self, serializer):
-
         serializer.save(user=self.request.user)
 
 
 class MessageViewSet(viewsets.ModelViewSet):
+    """
+    Manages individual messages within conversations.
+    """
+
     serializer_class = MessageSerializer
     permission_classes = [permissions.IsAuthenticated, IsOwnerOrReadOnly]
 
     def get_queryset(self):
-
         return Message.objects.filter(
             conversation__participants=self.request.user
         ).order_by("sent_at")
 
     def perform_create(self, serializer):
         serializer.save(sender=self.request.user)
+
+
+class UserViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Optional: Allows the frontend to fetch basic details of any user.
+    """
+
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAuthenticated]
